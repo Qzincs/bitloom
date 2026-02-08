@@ -66,3 +66,20 @@ pub struct Field {
     pub value: Vec<u8>,
     pub ignore_rules: bool,
 }
+
+
+#[cfg(test)]
+mod tests
+{
+    use super::*;
+    #[test]
+    fn test_field_rule_creation() {
+        let default_field = FieldRule::default();
+        assert_eq!(default_field.id, "new_field");
+        assert_eq!(default_field.length, FieldLength::Fixed(8));
+
+        let custom_field = FieldRule::new("version", FieldType::Fixed(4), FieldLength::Fixed(8));
+        assert_eq!(custom_field.id, "version");
+        assert_eq!(custom_field.field_type, FieldType::Fixed(4));
+    }
+}

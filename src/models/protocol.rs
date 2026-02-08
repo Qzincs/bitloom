@@ -348,3 +348,332 @@ pub struct Packet {
     pub protocol_id: String,
     pub field_values: Vec<Field>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_add_field_success() {
+        let mut proto = Protocol::test_protocol();
+        let field1 = FieldRule::new("field1", FieldType::Fixed(0), FieldLength::Fixed(8));
+
+        assert!(proto.add_field(field1).is_ok());
+        assert_eq!(proto.fields.len(), 1);
+    }
+
+    #[test]
+    fn test_add_field_duplicate_id() {
+        let mut proto = Protocol::test_protocol();
+
+        proto.with_f("field1", 8);
+        assert_eq!(proto.fields.len(), 1);
+
+        let field2 = FieldRule::new("field1", FieldType::Fixed(0), FieldLength::Fixed(16)); // duplicate ID
+        assert!(proto.add_field(field2).is_err());
+        assert_eq!(proto.fields.len(), 1); // only the first field should be added
+    }
+
+    #[test]
+    fn test_add_field_after_variable_length_field() {
+        let mut proto = Protocol::test_protocol();
+        let field1 = FieldRule::new("field1", FieldType::Input, FieldLength::Variable); // field with variable length 
+        let field2 = FieldRule::new("field2", FieldType::Fixed(0), FieldLength::Fixed(16)); // field to add after variable length field
+
+        assert!(proto.add_field(field1).is_ok());
+        assert_eq!(proto.fields.len(), 1);
+        assert!(proto.add_field(field2).is_err());
+        assert_eq!(proto.fields.len(), 1);
+    }
+
+    #[test]
+    fn test_remove_field_success() {
+        let mut proto = Protocol::test_protocol();
+        proto.with_f("field1", 8);
+
+        assert!(proto.remove_field("field1").is_ok());
+        assert_eq!(proto.fields.len(), 0);
+    }
+
+    #[test]
+    fn test_remove_field_not_found() {
+        let mut proto = Protocol::test_protocol();
+        proto.with_f("field1", 8);
+
+        assert!(proto.remove_field("nonexistent_field").is_err());
+        assert_eq!(proto.fields.len(), 1); // field count should remain unchanged
+    }
+
+    #[test]
+    fn test_move_field_success() {
+        let mut proto = Protocol::test_protocol();
+        proto
+            .with_f("field1", 8)
+            .with_f("field2", 16)
+            .with_f("field3", 32);
+
+        proto.move_field("field3", 0).unwrap();
+        assert_eq!(proto.fields[0].id, "field3");
+        assert_eq!(proto.fields[1].id, "field1");
+        assert_eq!(proto.fields[2].id, "field2");
+    }
+
+    #[test]
+    fn test_move_field_not_found() {
+        let mut proto = Protocol::test_protocol();
+        proto
+            .with_f("field1", 8)
+            .with_f("field2", 16)
+            .with_f("field3", 32);
+
+        assert!(proto.move_field("nonexistent_field", 1).is_err());
+    }
+
+    #[test]
+    fn test_move_field_out_of_bounds() {
+        let mut proto = Protocol::test_protocol();
+        proto
+            .with_f("field1", 8)
+            .with_f("field2", 16)
+            .with_f("field3", 32);
+
+        // Moving to an out-of-bounds index should place the field at the end
+        proto.move_field("field1", 10).unwrap();
+        assert_eq!(proto.fields[0].id, "field2");
+        assert_eq!(proto.fields[1].id, "field3");
+        assert_eq!(proto.fields[2].id, "field1");
+    }
+
+    #[test]
+    fn test_update_field_id_success() {
+        let mut proto = Protocol::test_protocol();
+        proto.with_f("field1", 8);
+
+        assert!(proto.update_field_id("field1", "field2").is_ok());
+        assert_eq!(proto.fields[0].id, "field2");
+    }
+
+    #[test]
+    fn test_update_field_id_duplicate() {
+        let mut proto = Protocol::test_protocol();
+        proto.with_f("field1", 8).with_f("field2", 16);
+
+        assert!(proto.update_field_id("field1", "field2").is_err());
+        assert_eq!(proto.fields[0].id, "field1"); // ID should remain unchanged
+    }
+
+    #[test]
+    fn test_edit_field_success() {
+        let mut proto = Protocol::test_protocol();
+        proto.with_f("field1", 8);
+
+        let result = proto.edit_field("field1", |f| {
+            f.length = FieldLength::Fixed(16);
+            Ok(())
+        });
+
+        assert!(result.is_ok());
+        assert_eq!(proto.fields[0].length, FieldLength::Fixed(16));
+    }
+
+    #[test]
+    fn test_edit_field_id_change_attempt() {
+        let mut proto = Protocol::test_protocol();
+        proto.with_f("field1", 8);
+
+        let result = proto.edit_field("field1", |f| {
+            f.id = "new_field_id".to_string(); // attempt to change ID
+            f.length = FieldLength::Fixed(16);
+            Ok(())
+        });
+
+        assert!(result.is_err());
+        // all changes should be reverted
+        assert_eq!(proto.fields[0].id, "field1");
+        assert!(proto.fields[0].length == FieldLength::Fixed(8));
+    }
+
+    #[test]
+    fn test_protocol_length_calculation() {
+        let mut proto = Protocol::test_protocol();
+        proto
+            .with_f("field1", 8)
+            .with_f("field2", 12)
+            .with_f("field3", 4);
+
+        assert_eq!(proto.length, ProtocolLength::Fixed(24));
+
+        // Add a variable length field
+        let var_field = FieldRule::new("field4", FieldType::Input, FieldLength::Variable);
+        proto.add_field(var_field).unwrap();
+
+        assert_eq!(proto.length, ProtocolLength::Variable(24));
+    }
+
+    #[test]
+    fn test_empty_protocol_length() {
+        let proto = Protocol::test_protocol();
+        assert_eq!(proto.length, ProtocolLength::Fixed(0));
+    }
+
+    #[test]
+    fn test_create_protocol_duplicate_id() {
+        let mut registry = ProtocolRegistry::new();
+        assert!(
+            registry
+                .create_protocol("proto1", None, Endianness::Big, None)
+                .is_ok()
+        );
+        assert!(
+            registry
+                .create_protocol("proto1", None, Endianness::Little, None)
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn test_get_protocol_not_found() {
+        let registry = ProtocolRegistry::new();
+        assert!(registry.get_protocol("nonexistent_proto").is_none());
+    }
+
+    #[test]
+    fn test_remove_protocol_with_subprotocols() {
+        let mut registry = ProtocolRegistry::new();
+        registry
+            .with_proto("parent_proto", None)
+            .with_proto("child_proto", Some("parent_proto".to_string()));
+
+        assert_eq!(registry.protocols.len(), 2);
+        assert!(registry.remove_protocol("parent_proto").is_ok());
+        assert_eq!(registry.protocols.len(), 0); // both parent and child should be removed
+    }
+
+    #[test]
+    fn test_update_protocol_id_with_children() {
+        let mut registry = ProtocolRegistry::new();
+        registry
+            .with_proto("parent_proto", None)
+            .with_proto("child_proto", Some("parent_proto".to_string()));
+
+        assert!(registry
+            .update_protocol_id("parent_proto", "new_parent_proto")
+            .is_ok());
+        assert!(registry.get_protocol("parent_proto").is_none());
+        assert!(registry.get_protocol("new_parent_proto").is_some());
+
+        // Check that the child protocol's parent_id has been updated
+        let child_proto = registry.get_protocol("child_proto").unwrap();
+        assert_eq!(
+            child_proto.parent_id.as_deref(),
+            Some("new_parent_proto")
+        );
+    }
+
+    #[test]
+    fn test_edit_protocol_success() {
+        let mut registry = ProtocolRegistry::new();
+        registry
+            .with_proto("proto1", None);
+
+        let result = registry.edit_protocol("proto1", |p| {
+            p.name = Some("Data Message".to_string());
+            Ok(())
+        });
+
+        assert!(result.is_ok());
+        let proto1 = registry.get_protocol("proto1").unwrap();
+        assert_eq!(proto1.name.as_deref(), Some("Data Message"));
+    }
+
+    #[test]
+    fn test_edit_protocol_fail() {
+        let mut registry = ProtocolRegistry::new();
+        registry
+            .with_proto("proto1", None);
+
+        registry.edit_protocol("proto1", |p| {
+            p.name = Some("Some Name".to_string());
+            Ok(())
+        }).unwrap();
+
+        let result = registry.edit_protocol("proto1", |p| {
+            p.name = Some("Another Name".to_string());
+            Err("Failed to edit protocol".to_string())
+        });
+
+        assert!(result.is_err());
+        let proto1 = registry.get_protocol("proto1").unwrap();
+        assert_eq!(proto1.name.as_deref(), Some("Some Name"));
+    }
+
+    #[test]
+    fn test_attempt_change_parent_id() {
+        let mut registry = ProtocolRegistry::new();
+        registry
+            .with_proto("proto1", None)
+            .with_proto("proto2", None);
+
+        let result = registry.edit_protocol("proto2", |p| {
+            p.parent_id = Some("proto1".to_string()); // attempt to change parent_id
+            Ok(())
+        });
+
+        assert!(result.is_err());
+        let proto2 = registry.get_protocol("proto2").unwrap();
+        assert_eq!(proto2.parent_id, None);
+    }
+
+    #[test]
+    fn test_get_inheritance_chain() {
+        let mut registry = ProtocolRegistry::new();
+        registry
+            .with_proto("grandparent", None)
+            .with_proto("parent", Some("grandparent".to_string()))
+            .with_proto("child", Some("parent".to_string()));
+
+        let chain = registry.get_inheritance_chain("child");
+        assert_eq!(chain.len(), 3);
+        assert_eq!(chain[0].id, "grandparent");
+        assert_eq!(chain[1].id, "parent");
+        assert_eq!(chain[2].id, "child");
+    }
+
+    #[test]
+    fn test_get_total_length() {
+        let mut registry = ProtocolRegistry::new();
+        registry
+            .with_proto("parent", None)
+            .with_proto("child", Some("parent".to_string()));
+
+        registry.protocols.get_mut("parent").unwrap()
+            .with_f("field1", 8)
+            .with_f("field2", 4);
+        registry.protocols.get_mut("child").unwrap()
+            .with_f("field3", 16);
+
+        let total_length = registry.get_total_length("child");
+        assert_eq!(total_length, ProtocolLength::Fixed(28));
+    }
+
+    impl Protocol {
+        fn test_protocol() -> Self {
+            Protocol::new("test_proto", None, Endianness::Big, None)
+        }
+
+        fn with_f(&mut self, field_id: &str, field_len: u32) -> &mut Self {
+            let field =
+                FieldRule::new(field_id, FieldType::Fixed(0), FieldLength::Fixed(field_len));
+            self.add_field(field).unwrap();
+            self
+        }
+    }
+
+    impl ProtocolRegistry {
+        fn with_proto(&mut self, id: &str, parent_id: Option<String>) -> &mut Self {
+            self.create_protocol(id, None, Endianness::Big, parent_id)
+                .unwrap();
+            self
+        }
+    }
+}
