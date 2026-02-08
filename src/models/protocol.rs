@@ -62,6 +62,15 @@ impl Protocol {
             ));
         }
 
+        if let Some(last_field) = self.fields.last() {
+            if let FieldLength::Variable = last_field.length {
+                return Err(format!(
+                    "Cannot add field '{}' after variable length field '{}' in protocol '{}'",
+                    field_rule.id, last_field.id, self.id
+                ));
+            }
+        }
+
         self.fields.push(field_rule);
         self.calculate_length();
         Ok(())
