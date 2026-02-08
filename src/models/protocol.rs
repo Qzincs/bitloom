@@ -268,7 +268,7 @@ impl ProtocolRegistry {
         }
     }
 
-    pub fn get_protocol(&mut self, protocol_id: &str) -> Option<&Protocol> {
+    pub fn get_protocol(&self, protocol_id: &str) -> Option<&Protocol> {
         self.protocols.get(protocol_id)
     }
 
