@@ -119,20 +119,23 @@ impl Protocol {
     {
         // find the field to edit
         if let Some(field) = self.fields.iter_mut().find(|f| f.id == field_id) {
-            let old_id = field.id.clone();
-            let old_len = field.length.clone();
-            // apply the edit function
-            f(field)?;
-
-            if field.id != old_id {
-                field.id = old_id; // revert ID change
+            let backup = field.clone();
+            // attempt to apply the edit function
+            if let Err(e) = f(field) {
+                *field = backup; // revert applied changes
+                return Err(e);
+            }
+            
+            // cannot change field ID through this method
+            if field.id != backup.id {
+                *field = backup; // revert applied changes
                 return Err(
                     "Field ID cannot be changed through edit_field; use update_field_id instead"
                         .to_string(),
                 );
             }
 
-            if field.length != old_len {
+            if field.length != backup.length {
                 self.calculate_length(); // recalculate protocol length if field length changed
             }
             
@@ -271,19 +274,21 @@ impl ProtocolRegistry {
         F: FnOnce(&mut Protocol) -> Result<(), String>,
     {
         if let Some(proto) = self.protocols.get_mut(protocol_id) {
-            let old_id = proto.id.clone();
-            let old_parent_id = proto.parent_id.clone();
+            let backup = proto.clone();
 
-            // apply the edit function
-            f(proto)?;
+            // attempt to apply the edit function
+            if let Err(e) = f(proto) {
+                *proto = backup; // revert applied changes
+                return Err(e);
+            }
 
-            if proto.id != old_id {
-                proto.id = old_id; // revert ID change
+            if proto.id != backup.id {
+                *proto = backup;
                 return Err("Protocol ID cannot be changed through edit_protocol; use rename_protocol instead".to_string());
             }
 
-            if proto.parent_id != old_parent_id {
-                proto.parent_id = old_parent_id; // revert parent ID change
+            if proto.parent_id != backup.parent_id {
+                *proto = backup;
                 return Err(
                     "Inheritance relationship (parent_id) is immutable after creation".to_string(),
                 );
