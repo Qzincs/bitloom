@@ -342,6 +342,20 @@ impl ProtocolRegistry {
         }
         ProtocolLength::Fixed(total_fixed_bits)
     }
+
+    /// Flatten and resolve all fields from the inheritance chain of a protocol.
+    pub fn resolve_fields(&self, protocol_id: &str) -> Result<Vec<FieldRule>, String> {
+        let chain = self.get_inheritance_chain(protocol_id);
+        if chain.is_empty() {
+            return Err(format!("Protocol with ID '{}' does not exist", protocol_id));
+        }
+
+        let mut resolved_fields = Vec::new();
+        for proto in chain {
+            resolved_fields.extend(proto.fields.iter().cloned());
+        }
+        Ok(resolved_fields)
+    }
 }
 
 pub struct Packet {
