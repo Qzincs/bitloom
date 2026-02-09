@@ -363,6 +363,31 @@ pub struct Packet {
     pub field_values: Vec<Field>,
 }
 
+impl Packet {
+    pub fn new(protocol_id: &str, field_rules: Vec<FieldRule>) -> Self {
+        Self {
+            protocol_id: protocol_id.to_string(),
+            field_values: field_rules
+                .into_iter()
+                .map(|rule| Field::new(&rule.id, vec![], false))
+                .collect(),
+        }
+    }
+
+    pub fn set_field_value(&mut self, index: usize, value: Vec<u8>) -> Result<(), String> {
+        if let Some(field) = self.field_values.get_mut(index) {
+            field.set_value(value);
+            Ok(())
+        } else {
+            Err(format!("Field at index {} not found in packet", index))
+        }
+    }
+
+    pub fn is_complete(&self) -> bool {
+        self.field_values.iter().all(|f| !f.value.is_empty())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

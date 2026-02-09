@@ -67,6 +67,24 @@ pub struct Field {
     pub ignore_rules: bool,
 }
 
+impl Field {
+    pub fn new(rule_id: &str, value: Vec<u8>, ignore_rules: bool) -> Self {
+        Self {
+            rule_id: rule_id.to_string(),
+            value,
+            ignore_rules,
+        }
+    }
+
+    pub fn set_value(&mut self, value: Vec<u8>) {
+        self.value = value;
+    }
+
+    pub fn ignore_rules(&mut self, ignore: bool) {
+        self.ignore_rules = ignore;
+    }
+}
+
 
 #[cfg(test)]
 mod tests
