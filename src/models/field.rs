@@ -14,10 +14,10 @@ pub enum FieldType {
     Range {
         min: i128,
         max: i128,
-        is_signed: bool,  
+        is_signed: bool,
     },
-    Expr(String),  // rhai script to compute the value
-    Input,         // data provided by user input
+    Expr(String), // rhai script to compute the value
+    Input,        // data provided by user input
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -85,10 +85,8 @@ impl Field {
     }
 }
 
-
 #[cfg(test)]
-mod tests
-{
+mod tests {
     use super::*;
     #[test]
     fn test_field_rule_creation() {

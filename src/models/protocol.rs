@@ -134,7 +134,7 @@ impl Protocol {
                 *field = backup; // revert applied changes
                 return Err(e);
             }
-            
+
             // cannot change field ID through this method
             if field.id != backup.id {
                 *field = backup; // revert applied changes
@@ -147,7 +147,7 @@ impl Protocol {
             if field.length != backup.length {
                 self.calculate_length(); // recalculate protocol length if field length changed
             }
-            
+
             Ok(())
         } else {
             Err(format!(
@@ -595,25 +595,23 @@ mod tests {
             .with_proto("parent_proto", None)
             .with_proto("child_proto", Some("parent_proto".to_string()));
 
-        assert!(registry
-            .update_protocol_id("parent_proto", "new_parent_proto")
-            .is_ok());
+        assert!(
+            registry
+                .update_protocol_id("parent_proto", "new_parent_proto")
+                .is_ok()
+        );
         assert!(registry.get_protocol("parent_proto").is_none());
         assert!(registry.get_protocol("new_parent_proto").is_some());
 
         // Check that the child protocol's parent_id has been updated
         let child_proto = registry.get_protocol("child_proto").unwrap();
-        assert_eq!(
-            child_proto.parent_id.as_deref(),
-            Some("new_parent_proto")
-        );
+        assert_eq!(child_proto.parent_id.as_deref(), Some("new_parent_proto"));
     }
 
     #[test]
     fn test_edit_protocol_success() {
         let mut registry = ProtocolRegistry::new();
-        registry
-            .with_proto("proto1", None);
+        registry.with_proto("proto1", None);
 
         let result = registry.edit_protocol("proto1", |p| {
             p.name = Some("Data Message".to_string());
@@ -628,13 +626,14 @@ mod tests {
     #[test]
     fn test_edit_protocol_fail() {
         let mut registry = ProtocolRegistry::new();
-        registry
-            .with_proto("proto1", None);
+        registry.with_proto("proto1", None);
 
-        registry.edit_protocol("proto1", |p| {
-            p.name = Some("Some Name".to_string());
-            Ok(())
-        }).unwrap();
+        registry
+            .edit_protocol("proto1", |p| {
+                p.name = Some("Some Name".to_string());
+                Ok(())
+            })
+            .unwrap();
 
         let result = registry.edit_protocol("proto1", |p| {
             p.name = Some("Another Name".to_string());
@@ -685,10 +684,16 @@ mod tests {
             .with_proto("parent", None)
             .with_proto("child", Some("parent".to_string()));
 
-        registry.protocols.get_mut("parent").unwrap()
+        registry
+            .protocols
+            .get_mut("parent")
+            .unwrap()
             .with_f("field1", 8)
             .with_f("field2", 4);
-        registry.protocols.get_mut("child").unwrap()
+        registry
+            .protocols
+            .get_mut("child")
+            .unwrap()
             .with_f("field3", 16);
 
         let total_length = registry.get_total_length("child");
