@@ -15,6 +15,8 @@ pub fn show(app: &mut BitLoomApp, ctx: &egui::Context) {
         .show(ctx, |ui| {
             ui.take_available_width();
 
+            ui.add_space(6.0);
+
             ui.horizontal(|ui| {
                 ui.add_space(4.0); // left margin
                 ui.strong("Protocols");
