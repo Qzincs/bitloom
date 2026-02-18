@@ -1,3 +1,4 @@
+use crate::models::protocol::{Endianness, ProtocolRegistry, ProtocolTreeNode};
 use eframe::egui;
 
 #[derive(PartialEq)]
@@ -8,6 +9,45 @@ pub enum ViewPage {
 
 pub struct BitLoomApp {
     pub current_page: ViewPage,
+    pub protocol_designer_state: ProtocolDesignerState,
+
+    pub protocol_registry: ProtocolRegistry,
+}
+
+pub struct ProtocolDesignerState {
+    pub protocol_trees: Vec<ProtocolTreeNode>,
+    pub current_protocol_id: Option<String>,
+    pub treeview_state: egui_ltreeview::TreeViewState<String>,
+
+    // Modal state for adding a new protocol
+    pub is_adding_protocol: bool,
+    pub new_protocol_id: String,
+    pub new_protocol_name: String,
+    pub new_protocol_endianness: Endianness,
+    pub new_protocol_parent_id: Option<String>,
+    pub error_msg: Option<String>,
+
+    // Modal state for confirming deletion
+    pub is_confirming_delete: bool,
+    pub delete_target_id: Option<String>,
+}
+
+impl Default for ProtocolDesignerState {
+    fn default() -> Self {
+        Self {
+            protocol_trees: Vec::new(),
+            current_protocol_id: None,
+            treeview_state: egui_ltreeview::TreeViewState::default(),
+            is_adding_protocol: false,
+            new_protocol_id: String::new(),
+            new_protocol_name: String::new(),
+            new_protocol_endianness: Endianness::Big,
+            new_protocol_parent_id: None,
+            error_msg: None,
+            is_confirming_delete: false,
+            delete_target_id: None,
+        }
+    }
 }
 
 impl BitLoomApp {
@@ -18,6 +58,8 @@ impl BitLoomApp {
         // for e.g. egui::PaintCallback.
         Self {
             current_page: ViewPage::ProtocolDesigner,
+            protocol_registry: ProtocolRegistry::new(),
+            protocol_designer_state: ProtocolDesignerState::default(),
         }
     }
 }

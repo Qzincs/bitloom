@@ -356,6 +356,62 @@ impl ProtocolRegistry {
         }
         Ok(resolved_fields)
     }
+
+    /// Build a tree structure of protocols for UI display, where each protocol is represented as a node and its subprotocols are its children.
+    pub fn build_protocol_trees(&self) -> Vec<ProtocolTreeNode> {
+        use std::collections::HashMap;
+
+        // Group protocols by their parent_id so we avoid repeated lookups when building the tree.
+        let mut parent_to_children: HashMap<Option<String>, Vec<String>> = HashMap::new();
+        for proto in self.protocols.values() {
+            parent_to_children
+                .entry(proto.parent_id.clone())
+                .or_default()
+                .push(proto.id.clone());
+        }
+
+        // sort children lists for consistent ordering in the UI
+        for children in parent_to_children.values_mut() {
+            children.sort();
+        }
+
+        // build tree nodes recursively
+        fn build_recursive(
+            current_id: &str,
+            map: &HashMap<Option<String>, Vec<String>>,
+            registry: &ProtocolRegistry,
+        ) -> ProtocolTreeNode {
+            let protocol = registry.protocols.get(current_id);
+            let mut node = ProtocolTreeNode {
+                protocol_id: current_id.to_string(),
+                protocol_name: protocol.and_then(|p| p.name.clone()),
+                children: Vec::new(),
+            };
+
+            if let Some(child_ids) = map.get(&Some(current_id.to_string())) {
+                for child_id in child_ids {
+                    node.children.push(build_recursive(child_id, map, registry));
+                }
+            }
+            node
+        }
+
+        // build trees starting from root protocols
+        parent_to_children
+            .get(&None) // all root protocols (those without a parent)
+            .cloned()
+            .unwrap_or_default() // in case there are no root protocols
+            .into_iter()
+            .map(|root_id| build_recursive(&root_id, &parent_to_children, self)) // build each tree
+            .collect()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ProtocolTreeNode {
+    pub protocol_id: String,
+    pub protocol_name: Option<String>,
+    pub children: Vec<ProtocolTreeNode>,
 }
 
 pub struct Packet {

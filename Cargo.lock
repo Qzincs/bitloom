@@ -435,6 +435,7 @@ name = "bitloom"
 version = "0.1.0"
 dependencies = [
  "eframe",
+ "egui_ltreeview",
  "serde",
 ]
 
@@ -898,6 +899,14 @@ dependencies = [
  "wasm-bindgen",
  "web-sys",
  "winit",
+]
+
+[[package]]
+name = "egui_ltreeview"
+version = "0.6.2-dev"
+source = "git+https://github.com/Qzincs/egui_ltreeview.git?branch=fix-empty-space-click#f9a2cfa589627aeed422f09a05fa3e7a11b9b7c7"
+dependencies = [
+ "egui",
 ]
 
 [[package]]
