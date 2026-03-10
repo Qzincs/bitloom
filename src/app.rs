@@ -32,6 +32,7 @@ pub struct ProtocolDesignerState {
     pub new_protocol_endianness: Endianness,
     pub new_protocol_parent_id: Option<String>,
     pub error_msg: Option<String>,
+    pub focus_new_protocol_id: bool, // Whether to auto-focus the protocol ID input on next frame
 
     // Modal state for confirming deletion
     pub is_confirming_delete: bool,
@@ -56,6 +57,7 @@ impl Default for ProtocolDesignerState {
             new_protocol_endianness: Endianness::Big,
             new_protocol_parent_id: None,
             error_msg: None,
+            focus_new_protocol_id: false,
             is_confirming_delete: false,
             delete_target_id: None,
             fields: Vec::new(),

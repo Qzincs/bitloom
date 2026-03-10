@@ -30,6 +30,7 @@ pub fn show(app: &mut BitLoomApp, ctx: &egui::Context) {
                         app.protocol_designer_state.new_protocol_parent_id =
                             app.protocol_designer_state.current_protocol_id.clone();
                         app.protocol_designer_state.is_adding_protocol = true;
+                        app.protocol_designer_state.focus_new_protocol_id = true;
                     }
                 });
             });
@@ -72,7 +73,11 @@ fn show_add_protocol_modal(ctx: &egui::Context, app: &mut BitLoomApp, parent_id:
                 .spacing([12.0, 8.0])
                 .show(ui, |ui| {
                     ui.label("Protocol ID:");
-                    ui.text_edit_singleline(&mut state.new_protocol_id);
+                    let id_res = ui.add(egui::TextEdit::singleline(&mut state.new_protocol_id).id(egui::Id::new("add_protocol_id_input")));
+                    if state.focus_new_protocol_id {
+                        id_res.request_focus();
+                        state.focus_new_protocol_id = false;
+                    }
                     ui.end_row();
 
                     ui.label("Name (Optional):");
