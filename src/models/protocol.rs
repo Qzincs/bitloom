@@ -344,17 +344,27 @@ impl ProtocolRegistry {
     }
 
     /// Flatten and resolve all fields from the inheritance chain of a protocol.
-    pub fn resolve_fields(&self, protocol_id: &str) -> Result<Vec<FieldRule>, String> {
+    /// Returns fields list and the count of inherited fields.
+    pub fn resolve_fields(&self, protocol_id: &str) -> Result<(Vec<FieldRule>, usize), String> {
         let chain = self.get_inheritance_chain(protocol_id);
         if chain.is_empty() {
             return Err(format!("Protocol with ID '{}' does not exist", protocol_id));
         }
 
-        let mut resolved_fields = Vec::new();
-        for proto in chain {
+        let total_fields: usize = chain.iter().map(|p| p.fields.len()).sum();
+        let mut resolved_fields = Vec::with_capacity(total_fields);
+
+        let mut inherited_field_count = 0;
+        let chain_len = chain.len();
+
+        for (i, proto) in chain.iter().enumerate() {
+            if i < chain_len - 1 {
+                inherited_field_count += proto.fields.len();
+            }
             resolved_fields.extend(proto.fields.iter().cloned());
         }
-        Ok(resolved_fields)
+
+        Ok((resolved_fields, inherited_field_count))
     }
 
     /// Build a tree structure of protocols for UI display, where each protocol is represented as a node and its subprotocols are its children.
@@ -404,6 +414,72 @@ impl ProtocolRegistry {
             .into_iter()
             .map(|root_id| build_recursive(&root_id, &parent_to_children, self)) // build each tree
             .collect()
+    }
+
+    pub fn add_protocol_field(
+        &mut self,
+        protocol_id: &str,
+        field_rule: FieldRule,
+    ) -> Result<(), String> {
+        if let Some(proto) = self.protocols.get_mut(protocol_id) {
+            proto.add_field(field_rule)
+        } else {
+            Err(format!("Protocol with ID '{}' does not exist", protocol_id))
+        }
+    }
+
+    pub fn remove_protocol_field(
+        &mut self,
+        protocol_id: &str,
+        field_id: &str,
+    ) -> Result<(), String> {
+        if let Some(proto) = self.protocols.get_mut(protocol_id) {
+            proto.remove_field(field_id)
+        } else {
+            Err(format!("Protocol with ID '{}' does not exist", protocol_id))
+        }
+    }
+
+    pub fn move_protocol_field(
+        &mut self,
+        protocol_id: &str,
+        field_id: &str,
+        new_index: usize,
+    ) -> Result<(), String> {
+        if let Some(proto) = self.protocols.get_mut(protocol_id) {
+            proto.move_field(field_id, new_index)
+        } else {
+            Err(format!("Protocol with ID '{}' does not exist", protocol_id))
+        }
+    }
+
+    pub fn update_protocol_field_id(
+        &mut self,
+        protocol_id: &str,
+        old_field_id: &str,
+        new_field_id: &str,
+    ) -> Result<(), String> {
+        if let Some(proto) = self.protocols.get_mut(protocol_id) {
+            proto.update_field_id(old_field_id, new_field_id)
+        } else {
+            Err(format!("Protocol with ID '{}' does not exist", protocol_id))
+        }
+    }
+
+    pub fn edit_protocol_field<F>(
+        &mut self,
+        protocol_id: &str,
+        field_id: &str,
+        f: F,
+    ) -> Result<(), String>
+    where
+        F: FnOnce(&mut FieldRule) -> Result<(), String>,
+    {
+        if let Some(proto) = self.protocols.get_mut(protocol_id) {
+            proto.edit_field(field_id, f)
+        } else {
+            Err(format!("Protocol with ID '{}' does not exist", protocol_id))
+        }
     }
 }
 

@@ -5,5 +5,6 @@ edition = "2024"
 
 [dependencies]
 eframe = "0.33.3"
+egui_extras = "0.33.3"
 egui_ltreeview = { git = "https://github.com/Qzincs/egui_ltreeview.git", branch = "fix-empty-space-click" }
 serde = { version = "1.0.228", features = ["derive"] }

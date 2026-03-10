@@ -5,6 +5,7 @@ pub fn show(_app: &mut BitLoomApp, ctx: &egui::Context) {
     egui::SidePanel::right("inspector")
         .resizable(true)
         .default_width(200.0)
+        .width_range(150.0..=400.0)
         .show(ctx, |ui| {
             ui.take_available_width();
 

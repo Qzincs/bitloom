@@ -231,6 +231,13 @@ fn show_protocols_trees(app: &mut BitLoomApp, ui: &mut egui::Ui) {
             egui_ltreeview::Action::SetSelected(selected_ids) => {
                 if let Some(selected_id) = selected_ids.first() {
                     *current_id = Some(selected_id.clone());
+                    let (fields, inherited_field_count) = app
+                        .protocol_registry
+                        .resolve_fields(selected_id)
+                        .unwrap_or_default();
+                    app.protocol_designer_state.fields = fields;
+                    app.protocol_designer_state.inherited_field_count = inherited_field_count;
+                    app.protocol_designer_state.selected_field_index = None;
                 } else {
                     *current_id = None;
                 }

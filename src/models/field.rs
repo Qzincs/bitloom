@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct EnumVariant {
@@ -20,11 +21,32 @@ pub enum FieldType {
     Input,        // data provided by user input
 }
 
+impl Display for FieldType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FieldType::Fixed(_) => write!(f, "Fixed"),
+            FieldType::Enum(_) => write!(f, "Enum"),
+            FieldType::Range { .. } => write!(f, "Range"),
+            FieldType::Expr(_) => write!(f, "Expression"),
+            FieldType::Input => write!(f, "Input"),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub enum FieldLength {
     /// Fixed length in bits
     Fixed(u32),
     Variable,
+}
+
+impl Display for FieldLength {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FieldLength::Fixed(len) => write!(f, "{}", len),
+            FieldLength::Variable => write!(f, "Variable"),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]

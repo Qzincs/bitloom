@@ -1,4 +1,10 @@
-use crate::models::protocol::{Endianness, ProtocolRegistry, ProtocolTreeNode};
+use crate::{
+    models::{
+        field::FieldRule,
+        protocol::{Endianness, ProtocolRegistry, ProtocolTreeNode},
+    },
+    ui::protocol_designer::EditableColumn,
+};
 use eframe::egui;
 
 #[derive(PartialEq)]
@@ -30,6 +36,12 @@ pub struct ProtocolDesignerState {
     // Modal state for confirming deletion
     pub is_confirming_delete: bool,
     pub delete_target_id: Option<String>,
+
+    pub fields: Vec<FieldRule>, // The fields copy for the currently selected protocol
+    pub inherited_field_count: usize, // Number of inherited fields (not directly defined in the current protocol)
+    pub focus_new_row: bool,          // Whether to auto-focus the new row after adding
+    pub editing_cell: Option<(usize, EditableColumn)>, // (field index, column)
+    pub selected_field_index: Option<usize>, // Currently selected row in the fields table
 }
 
 impl Default for ProtocolDesignerState {
@@ -46,6 +58,11 @@ impl Default for ProtocolDesignerState {
             error_msg: None,
             is_confirming_delete: false,
             delete_target_id: None,
+            fields: Vec::new(),
+            inherited_field_count: 0,
+            focus_new_row: false,
+            editing_cell: None,
+            selected_field_index: None,
         }
     }
 }
