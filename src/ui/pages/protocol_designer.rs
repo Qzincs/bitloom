@@ -109,7 +109,13 @@ fn show_fields_table(app: &mut BitLoomApp, ui: &mut egui::Ui) {
                 // Render inherited fields as disabled and non-editable
                 if row_idx < state.inherited_field_count {
                     let render_inherited_field = |ui: &mut egui::Ui, text: String| {
-                        ui.add_enabled(false, egui::Label::new(text));
+                        ui.scope(|ui| {
+                            ui.disable();
+                            ui.add_sized(
+                                [ui.available_width(), ui.spacing().interact_size.y],
+                                egui::Button::selectable(false, text),
+                            );
+                        });
                     };
                     // ID
                     row.col(|ui| {
@@ -122,7 +128,14 @@ fn show_fields_table(app: &mut BitLoomApp, ui: &mut egui::Ui) {
                     });
                     // Type
                     row.col(|ui| {
-                        render_inherited_field(ui, field.field_type.to_string());
+                        let type_text = field.field_type.to_string();
+                        ui.scope(|ui| {
+                            ui.disable();
+                            egui::ComboBox::from_id_salt(format!("type_inh_{}", row_idx))
+                                .selected_text(type_text)
+                                .width(ui.available_width())
+                                .show_ui(ui, |_| {});
+                        });
                     });
                     // Length
                     row.col(|ui| {
@@ -130,7 +143,8 @@ fn show_fields_table(app: &mut BitLoomApp, ui: &mut egui::Ui) {
                     });
                     // Offset
                     row.col(|ui| {
-                        render_inherited_field(ui, offset.to_string());
+                        ui.add_space(4.0);
+                        ui.label(offset.to_string());
                     });
                 } else {
                     let field_id = field.id.clone(); // 用于 Registry 定位的原始 ID
@@ -217,6 +231,7 @@ fn show_fields_table(app: &mut BitLoomApp, ui: &mut egui::Ui) {
                     row.col(|ui| {
                         let res = egui::ComboBox::from_id_salt(format!("type_{}", row_idx))
                             .selected_text(current_type_name.clone())
+                            .width(ui.available_width())
                             .show_ui(ui, |ui| {
                                 if ui
                                     .selectable_label(current_type_name == "Fixed", "Fixed")
@@ -300,6 +315,7 @@ fn show_fields_table(app: &mut BitLoomApp, ui: &mut egui::Ui) {
 
                     // Offset
                     row.col(|ui| {
+                        ui.add_space(4.0);
                         ui.label(offset.to_string());
                     });
                 }
