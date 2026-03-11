@@ -256,6 +256,7 @@ fn show_protocols_trees(app: &mut BitLoomApp, ui: &mut egui::Ui) {
             ContextMenuActions::AddProtocol(parent_id) => {
                 app.protocol_designer_state.is_adding_protocol = true;
                 app.protocol_designer_state.new_protocol_parent_id = Some(parent_id);
+                app.protocol_designer_state.focus_new_protocol_id = true;
             }
             ContextMenuActions::DeleteProtocol(protocol_id) => {
                 app.protocol_designer_state.is_confirming_delete = true;
