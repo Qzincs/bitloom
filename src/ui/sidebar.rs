@@ -3,6 +3,9 @@ use crate::models::protocol::{Endianness, ProtocolTreeNode};
 use eframe::egui;
 use egui_ltreeview::{NodeBuilder, TreeView, TreeViewBuilder};
 
+const ADD_PROTOCOL_ID_INPUT: &str = "add_protocol_id_input";
+const ADD_PROTOCOL_NAME_INPUT: &str = "add_protocol_name_input";
+
 enum ContextMenuActions {
     AddProtocol(String),    // parent_id
     DeleteProtocol(String), // protocol_id
@@ -73,7 +76,10 @@ fn show_add_protocol_modal(ctx: egui::Context, app: &mut BitLoomApp, parent_id: 
                 .spacing([12.0, 8.0])
                 .show(ui, |ui| {
                     ui.label("Protocol ID:");
-                    let id_res = ui.add(egui::TextEdit::singleline(&mut state.new_protocol_id).id(egui::Id::new("add_protocol_id_input")));
+                    let id_res = ui.add(
+                        egui::TextEdit::singleline(&mut state.new_protocol_id)
+                            .id(egui::Id::new(ADD_PROTOCOL_ID_INPUT)),
+                    );
                     if state.focus_new_protocol_id {
                         id_res.request_focus();
                         state.focus_new_protocol_id = false;
@@ -81,7 +87,10 @@ fn show_add_protocol_modal(ctx: egui::Context, app: &mut BitLoomApp, parent_id: 
                     ui.end_row();
 
                     ui.label("Name (Optional):");
-                    ui.text_edit_singleline(&mut state.new_protocol_name);
+                    ui.add(
+                        egui::TextEdit::singleline(&mut state.new_protocol_name)
+                            .id(egui::Id::new(ADD_PROTOCOL_NAME_INPUT)),
+                    );
                     ui.end_row();
 
                     ui.label("Endianness:");
@@ -118,6 +127,7 @@ fn show_add_protocol_modal(ctx: egui::Context, app: &mut BitLoomApp, parent_id: 
                     .add_sized(button_size, egui::Button::new("Cancel"))
                     .clicked()
                 {
+                    clear_add_protocol_focus(&ctx);
                     state.new_protocol_id.clear();
                     state.new_protocol_name.clear();
                     state.is_adding_protocol = false;
@@ -149,6 +159,7 @@ fn show_add_protocol_modal(ctx: egui::Context, app: &mut BitLoomApp, parent_id: 
                             parent_id.clone(),
                         ) {
                             Ok(_) => {
+                                clear_add_protocol_focus(&ctx);
                                 state.new_protocol_id.clear();
                                 state.new_protocol_name.clear();
                                 state.is_adding_protocol = false;
@@ -165,6 +176,13 @@ fn show_add_protocol_modal(ctx: egui::Context, app: &mut BitLoomApp, parent_id: 
             });
         });
     }
+}
+
+fn clear_add_protocol_focus(ctx: &egui::Context) {
+    ctx.memory_mut(|memory| {
+        memory.surrender_focus(egui::Id::new(ADD_PROTOCOL_ID_INPUT));
+        memory.surrender_focus(egui::Id::new(ADD_PROTOCOL_NAME_INPUT));
+    });
 }
 
 /// Show the modal dialog for confirming protocol deletion. Opens when `state.is_confirming_delete` is true.
