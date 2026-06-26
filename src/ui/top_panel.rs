@@ -1,8 +1,8 @@
 use crate::app::{BitLoomApp, ViewPage};
 use eframe::egui;
 
-pub fn show(app: &mut BitLoomApp, ctx: &egui::Context) {
-    egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
+pub fn show(app: &mut BitLoomApp, root_ui: &mut egui::Ui) {
+    egui::Panel::top("menu_bar").show_inside(root_ui, |ui| {
         egui::MenuBar::new().ui(ui, |ui| {
             ui.menu_button("File", |ui| {
                 if ui.button("New").clicked() {}
@@ -12,7 +12,7 @@ pub fn show(app: &mut BitLoomApp, ctx: &egui::Context) {
         });
     });
 
-    egui::TopBottomPanel::top("tab_bar").show(ctx, |ui| {
+    egui::Panel::top("tab_bar").show_inside(root_ui, |ui| {
         ui.horizontal(|ui| {
             ui.selectable_value(
                 &mut app.current_page,

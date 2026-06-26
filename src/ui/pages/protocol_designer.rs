@@ -12,8 +12,8 @@ pub enum EditableColumn {
     Length,
 }
 
-pub fn show(app: &mut BitLoomApp, ctx: &egui::Context) {
-    egui::CentralPanel::default().show(ctx, |ui| {
+pub fn show(app: &mut BitLoomApp, root_ui: &mut egui::Ui) {
+    egui::CentralPanel::default().show_inside(root_ui, |ui| {
         ui.horizontal(|ui| {
             ui.add_space(4.0);
             ui.strong("Fields");

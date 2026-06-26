@@ -1,11 +1,11 @@
 use crate::app::BitLoomApp;
 use eframe::egui;
 
-pub fn show(_app: &mut BitLoomApp, ctx: &egui::Context) {
-    egui::TopBottomPanel::bottom("hex_view")
+pub fn show(_app: &mut BitLoomApp, root_ui: &mut egui::Ui) {
+    egui::Panel::bottom("hex_view")
         .resizable(true)
-        .default_height(200.0)
-        .show(ctx, |ui| {
+        .default_size(200.0)
+        .show_inside(root_ui, |ui| {
             ui.take_available_height();
 
             ui.label("Hex View");

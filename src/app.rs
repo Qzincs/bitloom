@@ -84,11 +84,11 @@ impl BitLoomApp {
 }
 
 impl eframe::App for BitLoomApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        crate::ui::top_panel::show(self, ctx);
-        crate::ui::sidebar::show(self, ctx);
-        crate::ui::hex_view::show(self, ctx);
-        crate::ui::inspector::show(self, ctx);
-        crate::ui::protocol_designer::show(self, ctx);
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        crate::ui::top_panel::show(self, ui);
+        crate::ui::sidebar::show(self, ui);
+        crate::ui::hex_view::show(self, ui);
+        crate::ui::inspector::show(self, ui);
+        crate::ui::protocol_designer::show(self, ui);
     }
 }

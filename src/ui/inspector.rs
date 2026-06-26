@@ -1,12 +1,12 @@
 use crate::app::BitLoomApp;
 use eframe::egui;
 
-pub fn show(_app: &mut BitLoomApp, ctx: &egui::Context) {
-    egui::SidePanel::right("inspector")
+pub fn show(_app: &mut BitLoomApp, root_ui: &mut egui::Ui) {
+    egui::Panel::right("inspector")
         .resizable(true)
-        .default_width(200.0)
-        .width_range(150.0..=400.0)
-        .show(ctx, |ui| {
+        .default_size(200.0)
+        .size_range(150.0..=400.0)
+        .show_inside(root_ui, |ui| {
             ui.take_available_width();
 
             ui.add_space(6.0);

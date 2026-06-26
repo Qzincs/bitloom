@@ -8,11 +8,11 @@ enum ContextMenuActions {
     DeleteProtocol(String), // protocol_id
 }
 
-pub fn show(app: &mut BitLoomApp, ctx: &egui::Context) {
-    egui::SidePanel::left("sidebar")
+pub fn show(app: &mut BitLoomApp, root_ui: &mut egui::Ui) {
+    egui::Panel::left("sidebar")
         .resizable(true)
-        .default_width(200.0)
-        .show(ctx, |ui| {
+        .default_size(200.0)
+        .show_inside(root_ui, |ui| {
             ui.take_available_width();
 
             ui.add_space(6.0);
@@ -40,13 +40,13 @@ pub fn show(app: &mut BitLoomApp, ctx: &egui::Context) {
             show_protocols_trees(app, ui);
 
             show_add_protocol_modal(
-                ctx,
+                ui.ctx().clone(),
                 app,
                 app.protocol_designer_state.new_protocol_parent_id.clone(),
             );
 
             show_confirm_delete_modal(
-                ctx,
+                ui.ctx().clone(),
                 app,
                 app.protocol_designer_state
                     .delete_target_id
@@ -57,11 +57,11 @@ pub fn show(app: &mut BitLoomApp, ctx: &egui::Context) {
 }
 
 /// Show the modal dialog for adding a new protocol. Opens when `state.is_adding_protocol` is true.
-fn show_add_protocol_modal(ctx: &egui::Context, app: &mut BitLoomApp, parent_id: Option<String>) {
+fn show_add_protocol_modal(ctx: egui::Context, app: &mut BitLoomApp, parent_id: Option<String>) {
     let state = &mut app.protocol_designer_state;
 
     if state.is_adding_protocol {
-        egui::Modal::new(egui::Id::new("add_protocol_modal")).show(ctx, |ui| {
+        egui::Modal::new(egui::Id::new("add_protocol_modal")).show(&ctx, |ui| {
             ui.set_width(280.0);
 
             ui.heading("Add New Protocol");
@@ -168,11 +168,11 @@ fn show_add_protocol_modal(ctx: &egui::Context, app: &mut BitLoomApp, parent_id:
 }
 
 /// Show the modal dialog for confirming protocol deletion. Opens when `state.is_confirming_delete` is true.
-fn show_confirm_delete_modal(ctx: &egui::Context, app: &mut BitLoomApp, protocol_id: String) {
+fn show_confirm_delete_modal(ctx: egui::Context, app: &mut BitLoomApp, protocol_id: String) {
     let state = &mut app.protocol_designer_state;
 
     if state.is_confirming_delete {
-        egui::Modal::new(egui::Id::new("delete_confirm_modal")).show(ctx, |ui| {
+        egui::Modal::new(egui::Id::new("delete_confirm_modal")).show(&ctx, |ui| {
             ui.set_width(280.0);
 
             ui.heading("Confirm Delete");
