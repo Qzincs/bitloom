@@ -155,6 +155,9 @@ fn show_fields_table(app: &mut BitLoomApp, ui: &mut egui::Ui) {
                         let is_editing = state.editing_cell == Some((row_idx, EditableColumn::Id));
                         if is_editing {
                             let res = ui.text_edit_singleline(&mut field.id);
+                            if res.clicked() {
+                                state.selected_field_index = Some(row_idx);
+                            }
                             if res.changed() {
                                 let new_field_id = field.id.clone();
                                 let _ = app.protocol_registry.edit_protocol_field(
@@ -181,6 +184,9 @@ fn show_fields_table(app: &mut BitLoomApp, ui: &mut egui::Ui) {
                                     egui::Button::selectable(false, &field.id),
                                 )
                                 .on_hover_text("Double-click to edit");
+                            if resp.clicked() {
+                                state.selected_field_index = Some(row_idx);
+                            }
                             if resp.double_clicked() {
                                 state.editing_cell = Some((row_idx, EditableColumn::Id));
                             }
@@ -194,6 +200,9 @@ fn show_fields_table(app: &mut BitLoomApp, ui: &mut egui::Ui) {
                         if is_editing {
                             let mut name_text = field.name.clone().unwrap_or_default();
                             let res = ui.text_edit_singleline(&mut name_text);
+                            if res.clicked() {
+                                state.selected_field_index = Some(row_idx);
+                            }
                             if res.changed() {
                                 field.name = if name_text.is_empty() {
                                     None
@@ -220,6 +229,9 @@ fn show_fields_table(app: &mut BitLoomApp, ui: &mut egui::Ui) {
                                     egui::Button::selectable(false, name_text),
                                 )
                                 .on_hover_text("Double-click to edit");
+                            if resp.clicked() {
+                                state.selected_field_index = Some(row_idx);
+                            }
                             if resp.double_clicked() {
                                 state.editing_cell = Some((row_idx, EditableColumn::Name));
                             }
@@ -273,6 +285,10 @@ fn show_fields_table(app: &mut BitLoomApp, ui: &mut egui::Ui) {
                             })
                             .response;
 
+                        if res.clicked() {
+                            state.selected_field_index = Some(row_idx);
+                        }
+
                         if res.changed() {
                             let new_type = field.field_type.clone();
                             let _ = app.protocol_registry.edit_protocol_field(
@@ -291,13 +307,14 @@ fn show_fields_table(app: &mut BitLoomApp, ui: &mut egui::Ui) {
                         // TODO: variable length
                         if let FieldLength::Fixed(mut len) = field.length {
                             let w = ui.available_width();
-                            if ui
-                                .add_sized(
-                                    [w, ui.spacing().interact_size.y],
-                                    egui::DragValue::new(&mut len).speed(1.0),
-                                )
-                                .changed()
-                            {
+                            let resp = ui.add_sized(
+                                [w, ui.spacing().interact_size.y],
+                                egui::DragValue::new(&mut len).speed(1.0),
+                            );
+                            if resp.clicked() {
+                                state.selected_field_index = Some(row_idx);
+                            }
+                            if resp.changed() {
                                 field.length = FieldLength::Fixed(len);
                                 let _ = app.protocol_registry.edit_protocol_field(
                                     current_proto_id,
