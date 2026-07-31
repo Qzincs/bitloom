@@ -123,7 +123,7 @@ fn show_fields_table(app: &mut BitLoomApp, ui: &mut egui::Ui) {
                     });
                     // Name
                     row.col(|ui| {
-                        let name = field.name.as_deref().unwrap_or("-");
+                        let name = field.name.as_deref().unwrap_or("");
                         render_inherited_field(ui, name.to_string());
                     });
                     // Type
