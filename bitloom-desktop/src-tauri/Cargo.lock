@@ -259,11 +259,19 @@ dependencies = [
 name = "bitloom"
 version = "0.1.0"
 dependencies = [
+ "bitloom-core",
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
  "tauri-plugin-opener",
+]
+
+[[package]]
+name = "bitloom-core"
+version = "0.1.0"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

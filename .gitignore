@@ -1,2 +1,12 @@
-/target
+target
 .vscode
+
+# Frontend and bundler output
+node_modules/
+.svelte-kit/
+build/
+dist/
+
+# Local development notes
+bitloom-desktop/GUIDE.md
+bitloom-desktop/STEPS.md
