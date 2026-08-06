@@ -1,5 +1,5 @@
-use super::*;
 use super::super::field::FieldKind;
+use super::*;
 
 #[test]
 fn test_add_field_success() {
@@ -25,7 +25,7 @@ fn test_add_field_duplicate_id() {
 #[test]
 fn test_add_field_after_variable_length_field() {
     let mut proto = Protocol::test_protocol();
-        let field1 = FieldRule::new("field1", FieldKind::Input, FieldLength::Variable); // field with variable length
+    let field1 = FieldRule::new("field1", FieldKind::Input, FieldLength::Variable); // field with variable length
     let field2 = FieldRule::new("field2", FieldKind::Fixed(0), FieldLength::Fixed(16)); // field to add after variable length field
 
     assert!(proto.add_field(field1).is_ok());
@@ -314,8 +314,7 @@ impl Protocol {
     }
 
     fn with_f(&mut self, field_id: &str, field_len: u32) -> &mut Self {
-        let field =
-            FieldRule::new(field_id, FieldKind::Fixed(0), FieldLength::Fixed(field_len));
+        let field = FieldRule::new(field_id, FieldKind::Fixed(0), FieldLength::Fixed(field_len));
         self.add_field(field).unwrap();
         self
     }
