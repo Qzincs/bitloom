@@ -92,6 +92,23 @@ fn test_move_field_out_of_bounds() {
 }
 
 #[test]
+fn test_move_variable_field_before_fixed_field() {
+    let mut proto = Protocol::test_protocol();
+    proto.with_f("field1", 8);
+    proto
+        .add_field(FieldRule::new(
+            "field2",
+            FieldKind::Input,
+            FieldLength::Variable,
+        ))
+        .unwrap();
+
+    assert!(proto.move_field("field2", 0).is_err());
+    assert_eq!(proto.fields[0].id, "field1");
+    assert_eq!(proto.fields[1].id, "field2");
+}
+
+#[test]
 fn test_update_field_id_success() {
     let mut proto = Protocol::test_protocol();
     proto.with_f("field1", 8);
@@ -138,6 +155,22 @@ fn test_edit_field_id_change_attempt() {
     // all changes should be reverted
     assert_eq!(proto.fields[0].id, "field1");
     assert!(proto.fields[0].length == FieldLength::Fixed(8));
+}
+
+#[test]
+fn test_edit_non_last_field_to_variable_length() {
+    let mut proto = Protocol::test_protocol();
+    proto.with_f("field1", 8).with_f("field2", 16);
+
+    let result = proto.edit_field("field1", |field| {
+        field.length = FieldLength::Variable;
+        Ok(())
+    });
+
+    assert!(result.is_err());
+    assert_eq!(proto.fields[0].length, FieldLength::Fixed(8));
+    assert_eq!(proto.fields[1].length, FieldLength::Fixed(16));
+    assert_eq!(proto.length, ProtocolLength::Fixed(24));
 }
 
 #[test]

@@ -92,17 +92,22 @@ impl Protocol {
     }
 
     pub fn move_field(&mut self, field_id: &str, new_index: usize) -> Result<(), String> {
-        if let Some(pos) = self.fields.iter().position(|f| f.id == field_id) {
-            let field = self.fields.remove(pos);
-            let new_index = new_index.min(self.fields.len()); // ensure new_index is within bounds
-            self.fields.insert(new_index, field);
-            Ok(())
-        } else {
-            Err(format!(
+        let Some(old_index) = self.fields.iter().position(|f| f.id == field_id) else {
+            return Err(format!(
                 "Field with ID '{}' not found in protocol '{}'",
                 field_id, self.id
-            ))
-        }
+            ));
+        };
+
+        let mut fields = self.fields.clone();
+        let field = fields.remove(old_index);
+        let new_index = new_index.min(fields.len()); // ensure new_index is within bounds
+        fields.insert(new_index, field);
+
+        Self::validate_field_layout(&fields, &self.id)?;
+        self.fields = fields;
+
+        Ok(())
     }
 
     pub fn update_field_id(&mut self, old_id: &str, new_id: &str) -> Result<(), String> {
@@ -126,35 +131,38 @@ impl Protocol {
     where
         F: FnOnce(&mut FieldRule) -> Result<(), String>,
     {
-        // find the field to edit
-        if let Some(field) = self.fields.iter_mut().find(|f| f.id == field_id) {
-            let backup = field.clone();
-            // attempt to apply the edit function
-            if let Err(e) = f(field) {
-                *field = backup; // revert applied changes
-                return Err(e);
+        let Some(index) = self.fields.iter().position(|f| f.id == field_id) else {
+            return Err(format!(
+                "Field with ID '{}' not found in protocol '{}'",
+                field_id, self.id
+            ));
+        };
+
+        let mut fields = self.fields.clone();
+
+        {
+            let field = &mut fields[index];
+            if let Err(error) = f(field) {
+                return Err(error);
             }
 
             // cannot change field ID through this method
-            if field.id != backup.id {
-                *field = backup; // revert applied changes
+            if field.id != self.fields[index].id {
                 return Err(
                     "Field ID cannot be changed through edit_field; use update_field_id instead"
                         .to_string(),
                 );
             }
-
-            if field.length != backup.length {
-                self.calculate_length(); // recalculate protocol length if field length changed
-            }
-
-            Ok(())
-        } else {
-            Err(format!(
-                "Field with ID '{}' not found in protocol '{}'",
-                field_id, self.id
-            ))
         }
+
+        Self::validate_field_layout(&fields, &self.id)?;
+
+        let length_changed = fields[index].length != self.fields[index].length;
+        self.fields = fields;
+        if length_changed {
+            self.calculate_length();
+        }
+        Ok(())
     }
 
     pub fn set_parent_constraint(&mut self, field_id: &str, value: i128) {
@@ -178,6 +186,24 @@ impl Protocol {
             }
         }
         self.length = ProtocolLength::Fixed(total_fixed_bits);
+    }
+
+    /// Validate the layout of the protocol's fields.
+    fn validate_field_layout(fields: &[FieldRule], protocol_id: &str) -> Result<(), String> {
+        let Some(index) = fields
+            .iter()
+            .position(|f| matches!(&f.length, FieldLength::Variable))
+        else {
+            return Ok(());
+        };
+
+        if index != fields.len() - 1 {
+            return Err(format!(
+                "Variable length field '{}' must be the last field in protocol '{}'",
+                fields[index].id, protocol_id
+            ));
+        }
+        Ok(())
     }
 }
 
