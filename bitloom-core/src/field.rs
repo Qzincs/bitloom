@@ -81,6 +81,12 @@ impl Default for FieldRule {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct ResolvedField {
+    pub field: FieldRule,
+    pub defined_in: String,
+}
+
 /// An instance of a field in a protocol message
 pub struct Field {
     pub rule_id: String,

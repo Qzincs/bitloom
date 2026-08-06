@@ -1,4 +1,4 @@
-use super::field::{Field, FieldLength, FieldRule};
+use super::field::{Field, FieldLength, FieldRule, ResolvedField};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -344,8 +344,8 @@ impl ProtocolRegistry {
     }
 
     /// Flatten and resolve all fields from the inheritance chain of a protocol.
-    /// Returns fields list and the count of inherited fields.
-    pub fn resolve_fields(&self, protocol_id: &str) -> Result<(Vec<FieldRule>, usize), String> {
+    /// Returns all fields with the protocol where each field was defined.
+    pub fn resolve_fields(&self, protocol_id: &str) -> Result<Vec<ResolvedField>, String> {
         let chain = self.get_inheritance_chain(protocol_id);
         if chain.is_empty() {
             return Err(format!("Protocol with ID '{}' does not exist", protocol_id));
@@ -354,17 +354,14 @@ impl ProtocolRegistry {
         let total_fields: usize = chain.iter().map(|p| p.fields.len()).sum();
         let mut resolved_fields = Vec::with_capacity(total_fields);
 
-        let mut inherited_field_count = 0;
-        let chain_len = chain.len();
-
-        for (i, proto) in chain.iter().enumerate() {
-            if i < chain_len - 1 {
-                inherited_field_count += proto.fields.len();
-            }
-            resolved_fields.extend(proto.fields.iter().cloned());
+        for proto in chain {
+            resolved_fields.extend(proto.fields.iter().map(|field| ResolvedField {
+                field: field.clone(),
+                defined_in: proto.id.clone(),
+            }));
         }
 
-        Ok((resolved_fields, inherited_field_count))
+        Ok(resolved_fields)
     }
 
     /// Build a tree structure of protocols for UI display, where each protocol is represented as a node and its subprotocols are its children.
