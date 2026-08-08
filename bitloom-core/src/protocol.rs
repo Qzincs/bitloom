@@ -189,7 +189,10 @@ impl Protocol {
     }
 
     /// Validate the layout of the protocol's fields.
-    fn validate_field_layout(fields: &[FieldRule], protocol_id: &str) -> Result<(), String> {
+    pub(crate) fn validate_field_layout<'a>(
+        fields: &[FieldRule],
+        protocol_id: &str,
+    ) -> Result<(), String> {
         let Some(index) = fields
             .iter()
             .position(|f| matches!(&f.length, FieldLength::Variable))

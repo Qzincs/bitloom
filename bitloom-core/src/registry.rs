@@ -1,6 +1,6 @@
+use crate::field::{FieldLength, FieldRule, ResolvedField};
+use crate::protocol::{Endianness, Protocol, ProtocolLength, ProtocolTreeNode};
 use std::collections::HashMap;
-use crate::field::{FieldRule, ResolvedField};
-use crate::protocol::{Protocol, Endianness, ProtocolLength, ProtocolTreeNode};
 
 pub struct ProtocolRegistry {
     /// map from protocol ID to Protocol definition
@@ -239,11 +239,17 @@ impl ProtocolRegistry {
         protocol_id: &str,
         field_rule: FieldRule,
     ) -> Result<(), String> {
-        if let Some(proto) = self.protocols.get_mut(protocol_id) {
-            proto.add_field(field_rule)
-        } else {
-            Err(format!("Protocol with ID '{}' does not exist", protocol_id))
-        }
+        let mut candidate = self
+            .protocols
+            .get(protocol_id)
+            .cloned()
+            .ok_or_else(|| format!("Protocol with ID '{}' does not exist", protocol_id))?;
+        candidate.add_field(field_rule)?;
+
+        self.validate_protocol(&candidate)?;
+
+        self.protocols.insert(protocol_id.to_string(), candidate);
+        Ok(())
     }
 
     pub fn remove_protocol_field(
@@ -264,11 +270,17 @@ impl ProtocolRegistry {
         field_id: &str,
         new_index: usize,
     ) -> Result<(), String> {
-        if let Some(proto) = self.protocols.get_mut(protocol_id) {
-            proto.move_field(field_id, new_index)
-        } else {
-            Err(format!("Protocol with ID '{}' does not exist", protocol_id))
-        }
+        let mut candidate = self
+            .protocols
+            .get(protocol_id)
+            .cloned()
+            .ok_or_else(|| format!("Protocol with ID '{}' does not exist", protocol_id))?;
+        candidate.move_field(field_id, new_index)?;
+
+        self.validate_protocol(&candidate)?;
+
+        self.protocols.insert(protocol_id.to_string(), candidate);
+        Ok(())
     }
 
     pub fn update_protocol_field_id(
@@ -293,11 +305,60 @@ impl ProtocolRegistry {
     where
         F: FnOnce(&mut FieldRule) -> Result<(), String>,
     {
-        if let Some(proto) = self.protocols.get_mut(protocol_id) {
-            proto.edit_field(field_id, f)
-        } else {
-            Err(format!("Protocol with ID '{}' does not exist", protocol_id))
+        let mut candidate = self
+            .protocols
+            .get(protocol_id)
+            .cloned()
+            .ok_or_else(|| format!("Protocol with ID '{}' does not exist", protocol_id))?;
+        candidate.edit_field(field_id, f)?;
+
+        self.validate_protocol(&candidate)?;
+
+        self.protocols.insert(protocol_id.to_string(), candidate);
+        Ok(())
+    }
+
+    fn validate_protocol(&self, protocol: &Protocol) -> Result<(), String> {
+        let chain = self.get_inheritance_chain(&protocol.id);
+        let mut all_fields = Vec::new();
+
+        for i in 0..chain.len() - 1 {
+            all_fields.extend(chain[i].fields.iter().cloned());
         }
+
+        all_fields.extend(protocol.fields.iter().cloned());
+
+        Protocol::validate_field_layout(&all_fields, &protocol.id)?;
+
+        let Some(last_field) = all_fields.last() else {
+            return Ok(());
+        };
+
+        if matches!(last_field.length, FieldLength::Variable) {
+            if self.has_descendant_fields(&protocol.id) {
+                return Err(format!(
+                    "Protocol '{}' has descendants with fields, so its last field cannot be variable",
+                    protocol.id
+                ));
+            }
+        }
+
+        Ok(())
+    }
+
+    fn has_descendant_fields(&self, protocol_id: &str) -> bool {
+        let children = self
+            .protocols
+            .values()
+            .filter(|p| p.parent_id.as_deref() == Some(protocol_id));
+
+        for child in children {
+            if !child.fields.is_empty() || self.has_descendant_fields(&child.id) {
+                return true;
+            }
+        }
+
+        false
     }
 }
 
